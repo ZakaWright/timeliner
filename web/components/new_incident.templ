@@ -1,0 +1,21 @@
+package components
+
+
+templ NewIncident() {
+
+    @Base("New Incident") {
+        <form id="new-incident" class="new-incident">
+            <div class="mb-3">
+                <label for="incident-name" class="form-label">Incident Name</label>
+                <input type="text" class="form-control" id="input-incident-name">
+                <label for="case-number" class="form-label">Case Number</label>
+                <input type="text" class="form-control" id="input-case-number">
+                <label for="incident-description" class="form-label">Description</label>
+                <textarea id="incident-description" class="form-control"></textarea>
+                
+                <input type="checkbox" class="form-check-input" value="" id="check-case-status" checked>
+                <label for="check-case-status" class="form-check-label">Case Open</label>
+            </div>
+        </form>
+    }
+}

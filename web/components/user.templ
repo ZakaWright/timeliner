@@ -1,0 +1,11 @@
+package components
+
+import "timeliner/internal/models"
+
+templ User(user models.User) {
+    <div id="user" class="user">
+        <h1>{user.Username}</h1>
+        <p>{user.IsActive}</p>
+
+    </div>
+}
