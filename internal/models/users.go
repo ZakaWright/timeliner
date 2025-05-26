@@ -75,48 +75,6 @@ func (m UserModel) Insert(username string, password string) (*User, error) {
 	return &user, nil
 }
 
-/*
-func (m UserModel) Login(username string, password string) (*User, error) {
-	if strings.TrimSpace(username) == "" {
-		return nil, errors.New("username cannot be empty")
-	}
-	if strings.TrimSpace(password) == "" {
-		return nil, errors.New("password cannot be empty")
-	}
-	query := `
-		SELECT user_id, username, password_hash, is_active, created_at
-		FROM users
-		WHERE username = $1
-	`
-	var user User
-	err := m.DB.QueryRow(m.CTX, query, username).Scan(
-		&user.ID,
-		&user.Username,
-		&user.PasswordHash,
-		&user.IsActive,
-		&user.CreatedAt,
-	)
-
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, errors.New("username or password is incorrect")
-		}
-		return nil, fmt.Errorf("Error %v", err)
-	}
-	if !user.IsActive {
-		return nil, errors.New("account is not active")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		return nil, errors.New("username or password is incorrect")
-	}
-	// clear password from return value
-	user.PasswordHash = ""
-	return &user, nil
-}
-*/
-
 func (m UserModel) GetActiveUsers() ([]*User, error) {
 	query := `
 		SELECT user_id, username

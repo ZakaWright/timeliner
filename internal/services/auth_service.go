@@ -115,6 +115,26 @@ func (auth AuthService) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func (auth AuthService) RegisterUser(w http.ResponseWriter, r *http.Request, user_model models.UserModel) {
+	fmt.Println("In Register User")
+	r.ParseForm()
+	username := r.PostForm.Get("register-username")
+	password := r.PostForm.Get("register-password")
+
+	if strings.TrimSpace(username) == "" {
+		//return nil, errors.New("username cannot be empty")
+		http.Error(w, "Username cannot be empty", http.StatusBadRequest)
+	}
+	user, err := user_model.Insert(username, password)
+	if err != nil {
+		//return nil, fmt.Errorf("user creation failed %v", err)
+		http.Error(w, "Error creating user", http.StatusBadRequest)
+	}
+	fmt.Printf("User created %d", user.ID)
+	//return user, nil
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
 func GetUser(r *http.Request, user_model models.UserModel) (*models.User, error) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	if claims["user_id"] != nil {

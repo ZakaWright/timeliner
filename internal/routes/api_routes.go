@@ -5,19 +5,19 @@ import (
 	"net/http"
 	"strconv"
 
-	"timeliner/internal/models"
+	"timeliner/internal/app"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func GetUserById(w http.ResponseWriter, r *http.Request, user_model models.UserModel) {
+func GetUserById(w http.ResponseWriter, r *http.Request, app *app.App) {
 	id := chi.URLParam(r, "id")
 	intID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
-	user, err := user_model.GetByID(intID)
+	user, err := app.Models.Users.GetByID(intID)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return

@@ -7,27 +7,16 @@ import (
 	"net/http"
 	"os"
 
+	"timeliner/internal/app"
 	"timeliner/internal/database"
-	"timeliner/internal/models"
 	"timeliner/internal/routes"
 
-	"errors"
-	"strings"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-
-	"timeliner/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth"
 )
-
-type App struct {
-	DBClient *pgxpool.Pool
-	CTX      context.Context
-}
 
 func main() {
 	ctx := context.Background()
@@ -46,9 +35,8 @@ func main() {
 
 	log.Println("Application started")
 
-	models := models.GetModels(db, ctx)
 	jwtSecret := os.Getenv("JWT_SECRET")
-	auth := services.NewAuthService(db, ctx, []byte(jwtSecret))
+	app := app.NewApp(db, ctx, []byte(jwtSecret))
 
 	// test user creation
 	/*
@@ -61,15 +49,15 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
-	// If I migrate to another file - http.ListenAndServe(":"+port, whatever.Router())
 	// Routes
 	router.Group(func(router chi.Router) {
-		router.Use(jwtauth.Verifier(auth.JwtAuth))
+		router.Use(jwtauth.Verifier(app.Auth.JwtAuth))
 		router.Use(jwtauth.Authenticator)
+
 		router.Get("/authtest", func(w http.ResponseWriter, r *http.Request) {
 			//w.Write([]byte(fmt.Sprintf("Working")))
 			fmt.Println("Calling auth test")
-			routes.AuthTest(w, r, models.Users)
+			routes.AuthTest(w, r, app.Models.Users)
 		})
 	})
 
@@ -77,50 +65,44 @@ func main() {
 		routes.Index(w, r)
 	})
 
-	router.Get("/login", func(w http.ResponseWriter, r *http.Request) {
-		routes.Login(w, r)
+	router.Route("/login", func(router chi.Router) {
+		router.Get("/", routes.Login)
+		router.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			app.Auth.LoginUser(w, r, app.Models.Users)
+		})
 	})
 
-	router.Post("/login", func(w http.ResponseWriter, r *http.Request) {
-		/*
-			r.ParseForm()
-			username := r.PostForm.Get("username")
-			password := r.PostForm.Get("password")
-			auth.LoginUser(models.Users, username, password)
-		*/
-		auth.LoginUser(w, r, models.Users)
+	router.Route("/register", func(router chi.Router) {
+		router.Get("/", routes.RegisterUser)
+		router.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println("Calling Register User")
+			app.Auth.RegisterUser(w, r, app.Models.Users)
+		})
+
 	})
 
 	router.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
 		routes.Logout(w, r)
 	})
 	router.Post("/logout", func(w http.ResponseWriter, r *http.Request) {
-		auth.LogOutUser(w, r)
+		app.Auth.LogOutUser(w, r)
 	})
 	router.Get("/incidents/new", func(w http.ResponseWriter, r *http.Request) {
 		routes.NewIncident(w, r)
 	})
 
 	router.Get("/user/{id}", func(w http.ResponseWriter, r *http.Request) {
-		routes.GetUser(w, r, models.Users)
+		routes.GetUser(w, r, &app.Models.Users)
 	})
 
 	// API
-	router.Get("/api/user/{id}", func(w http.ResponseWriter, r *http.Request) {
-		routes.GetUserById(w, r, models.Users)
-	})
+	router.Route("/api", (func(router chi.Router) {
+		router.Route("/user", (func(router chi.Router) {
+			router.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+				routes.GetUserById(w, r, app)
+			})
+		}))
+	}))
 
-	// start server
 	http.ListenAndServe(":8000", router)
-}
-
-func /*(auth *App)*/ RegisterUser(userModel models.UserModel, username, password string) (*models.User, error) {
-	if strings.TrimSpace(username) == "" {
-		return nil, errors.New("username cannot be empty")
-	}
-	user, err := userModel.Insert(username, password)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
 }

@@ -8,7 +8,7 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Login() templ.Component {
+func RegisterUser() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -41,7 +41,7 @@ func Login() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form action=\"/login\" method=\"post\"><div class=\"mb-3\"><label for=\"login-username\" class=\"form-label\">Username</label> <input type=\"text\" class=\"form-control\" id=\"login-username\" name=\"login-username\"></div><div class=\"mb-3\"><label for=\"login-password\" class=\"form-label\">Password</label> <input type=\"password\" class=\"form-control\" id=\"login-password\" name=\"login-password\"></div><button type=\"submit\" class=\"btn btn-primary\">Submit</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form action=\"/register\" method=\"post\"><div class=\"mb-3\"><label for=\"register-username\" class=\"form-label\">Username</label> <input type=\"text\" class=\"form-control\" id=\"register-username\" name=\"register-username\"></div><div class=\"mb-3\"><label for=\"register-password\" class=\"form-label\">Password</label> <input type=\"password\" class=\"form-control\" id=\"register-password\" name=\"register-password\"></div><button type=\"submit\" class=\"btn btn-primary\">Register User</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

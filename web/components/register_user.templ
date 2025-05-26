@@ -1,0 +1,17 @@
+package components
+
+templ RegisterUser() {
+    @Base("Timeliner") {
+    <form action="/register" method="post">
+    <div class="mb-3">
+        <label for="register-username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="register-username" name="register-username">
+    </div>
+    <div class="mb-3">
+        <label for="register-password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="register-password" name="register-password">
+    </div>
+    <button type="submit" class="btn btn-primary">Register User</button>
+    </form>
+    }
+}

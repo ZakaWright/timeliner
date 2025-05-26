@@ -21,12 +21,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	component.Render(r.Context(), w)
 }
 
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
+	component := components.RegisterUser()
+	component.Render(r.Context(), w)
+}
+
 func Logout(w http.ResponseWriter, r *http.Request) {
 	component := components.LogOut()
 	component.Render(r.Context(), w)
 }
 
-func GetUser(w http.ResponseWriter, r *http.Request, user_model models.UserModel) {
+func GetUser(w http.ResponseWriter, r *http.Request, user_model *models.UserModel) {
 	id := chi.URLParam(r, "id")
 	intID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -34,7 +39,7 @@ func GetUser(w http.ResponseWriter, r *http.Request, user_model models.UserModel
 		return
 	}
 	user, err := user_model.GetByID(intID)
-	if err != nil {
+	if err != nil || user == nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
