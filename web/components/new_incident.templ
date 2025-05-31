@@ -1,20 +1,27 @@
 package components
 
+import (
+    "timeliner/internal/models"
+)
 
-templ NewIncident() {
+templ NewIncident(user *models.User) {
 
-    @Base("New Incident") {
-        <form id="new-incident" class="new-incident">
+    @Base("New Incident", user) {
+        //<form id="new-incident" hx-get="/test" hx-target="#toast-container" hx-swap="outerHTML">
+        <form id="new-incident" hx-post="/incidents/new" hx-target="#toast-container" hx-swap="beforeend">
+        
             <div class="mb-3">
                 <label for="incident-name" class="form-label">Incident Name</label>
-                <input type="text" class="form-control" id="input-incident-name">
+                <input type="text" class="form-control" name="incident-name" id="input-incident-name" required>
                 <label for="case-number" class="form-label">Case Number</label>
-                <input type="text" class="form-control" id="input-case-number">
+                <input type="text" class="form-control" name="case-number" id="input-case-number" required>
                 <label for="incident-description" class="form-label">Description</label>
-                <textarea id="incident-description" class="form-control"></textarea>
-                
-                <input type="checkbox" class="form-check-input" value="" id="check-case-status" checked>
-                <label for="check-case-status" class="form-check-label">Case Open</label>
+                <textarea id="incident-description" name="description" class="form-control"></textarea>
+                <br>
+                <input type="checkbox" class="form-check-input" value="" name="status" id="check-case-status" checked>
+                <label for="check-case-status" name="status" class="form-check-label">Case Open</label>
+                <br><br>
+                <button type="submit" class="btn btn-primary">Submit</button>
             </div>
         </form>
     }

@@ -1,7 +1,10 @@
 package components
 
-templ Index() {
-    @Base("Timeliner") {
+import (
+    "timeliner/internal/models"
+)
+templ Index(user *models.User) {
+    @Base("Timeliner", user) {
          <div>
             <h1>Welcome to Timeliner</h1>
         </div>

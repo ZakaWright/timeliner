@@ -1,0 +1,125 @@
+package components
+
+import (
+    "timeliner/internal/models"
+    "strconv"
+)
+
+templ Events(incident_id int64, events []*models.Event) {
+    <div class="events-list" id="events-list">
+    <h1>Events</h1>
+    if events == nil || len(events) < 1 {
+        <p>No Events</p>
+    } else {
+        <ul id="events-list-ul">
+        for _, event := range events {
+            <li>{event.EventType}:{utcTime(event.EventTime)}</li>
+        }
+        </ul>
+    }
+
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal"
+        hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/new"}
+        hx-target="#myModal"
+        hx-swap="innerHTML"
+    >New Event</button>
+    // close modal if open when successfully updated
+    <script>
+        var modal = document.getElementById('myModal');
+        if (modal) {
+            var modal = bootstrap.Modal.getInstance(modal);
+            modal.hide();
+        }
+    </script>
+    </div>
+
+}
+
+templ NewEvent(id int64) {
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">New Event</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="new-event"
+                hx-post={"/incident/" + strconv.FormatInt(id, 10) + "/events/new"}
+                    hx-trigger="submit"
+                    hx-target="#events-list"
+                    hx-swap="innerHTML">
+            <!-- Modal body -->
+                <div class="modal-body">
+                    /*
+                    <label for="event-name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="event-name" name="event-name" required>
+                    */
+                    // TODO adjust for UTC time/add timezone picker
+                    <label for="event-time" class="form-label">Event Time (Local)</label>
+                    <input type="datetime-local" class="form-control" id="event-time" name="event-time" required>
+
+                    <label for="event-type" class="form-label">Event Type</label>
+                    <input type="text" class="form-control" id="event-type" name="event-type" required>
+
+                    <label for="event-endpoint" class="form-label">Endpoint</label>
+                    <div class="input-group">
+                        <select class="form-select" aria-label="Endpoint Select" name="event-endpoint" id="event-endpoint-select" 
+                            aria-describedby="new-event-new-endpoint-button"
+                            hx-get={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints/list"}
+                            hx-trigger="mouseover"
+                            hx-target="#event-endpoint-select"
+                            hx-swap="innerHTML"
+                            >
+                            <div id="placeholder"></div>
+                        </select>
+                        <div
+                            hx-get={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints/list"}
+                            hx-trigger="load"
+                            hx-target="#event-endpoint-select"
+                            hx-swap="innerHTML"></div>
+                        <button class="btn btn-outline-secondary" type="button" id="new-event-new-endpoint-button"
+                            hx-get={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints/new-inline"}
+                            hx-trigger="click"
+                            hx-target="#new-event-new-endpoint"
+                            hx-swap="innerHTML"
+                        >New Endpoint</button>
+                    </div>
+                    <div id="new-event-new-endpoint" class="my-3"></div>
+
+                    <label for="event-description" class="form-label">Description</label>
+                    <textarea name="event-description" id="event-description" class="form-control"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="new-event-submit" type="submit">Submit
+                        <div
+                            hx-get={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints"}
+                            hx-trigger="click from:#new-event-submit"
+                            hx-target="#endpointCards"
+                            hx-swap="innerHTML"
+                        ></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+templ TimelineEvent(incident_id int64, events []*models.Event) {
+    if events == nil || len(events) < 1 {
+        <p>No events</p>
+    } else {
+        for _, event := range events {
+            <li class="timeline-item mb-5"
+                data-bs-toggle="modal" data-bs-target="#myModal"
+                hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/new"}
+                hx-target="#myModal"
+                hx-swap="innerHTML"
+            >
+                <h5 class="fw-bold">{event.EventType}</h5>
+                <p class="text-muted mb-2 fw-bold">{utcTime(event.EventTime)} UTC</p>
+            </li>
+        }
+    }
+}

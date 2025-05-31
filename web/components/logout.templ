@@ -1,9 +1,13 @@
 package components
 
+import (
+    //"timeliner/internal/models"
+)
+
 templ LogOut() {
-    @Base("Timeliner") {
+    <div class="p-3">
     <form action="/logout" method="post">
     <button type="submit" class="btn btn-primary">Log Out</button>
     </form>
-    }
+    </div>
 }

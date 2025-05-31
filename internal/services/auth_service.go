@@ -96,7 +96,7 @@ func (auth AuthService) LoginUser(w http.ResponseWriter, r *http.Request, userMo
 		Name:  "jwt",
 		Value: token,
 	})
-	http.Redirect(w, r, "/authtest", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }
 
@@ -116,7 +116,6 @@ func (auth AuthService) LogOutUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (auth AuthService) RegisterUser(w http.ResponseWriter, r *http.Request, user_model models.UserModel) {
-	fmt.Println("In Register User")
 	r.ParseForm()
 	username := r.PostForm.Get("register-username")
 	password := r.PostForm.Get("register-password")
@@ -135,33 +134,33 @@ func (auth AuthService) RegisterUser(w http.ResponseWriter, r *http.Request, use
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-func GetUser(r *http.Request, user_model models.UserModel) (*models.User, error) {
+func (auth AuthService) GetUser(r *http.Request, user_model models.UserModel) (*models.User, error) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
-	if claims["user_id"] != nil {
-		id := claims["user_id"]
-		var intID int64
-		switch v := id.(type) {
-		case float64:
-			intID = int64(v)
-		case string:
-			parsedID, err := strconv.ParseInt(v, 10, 64)
-			if err != nil {
-				//http.Redirect(w, r, "/login", http.StatusSeeOther)
-				return nil, errors.New("invalid user ID")
-			}
-			intID = parsedID
-		default:
+	fmt.Printf("Claims: %v", claims)
+	if claims["user_id"] == nil {
+		return nil, nil
+	}
+	id := claims["user_id"]
+	var intID int64
+	switch v := id.(type) {
+	case float64:
+		intID = int64(v)
+	case string:
+		parsedID, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
 			//http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return nil, errors.New("invalid user ID")
 		}
-		user, err := user_model.GetByID(intID)
-		if err != nil {
-			//http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return nil, errors.New("invalid user")
-		}
-		return user, nil
-
+		intID = parsedID
+	default:
+		//http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return nil, errors.New("invalid user ID")
 	}
-	return nil, errors.New("invalid user")
+	user, err := user_model.GetByID(intID)
+	if err != nil {
+		//http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return nil, errors.New("invalid user")
+	}
+	return user, nil
 
 }

@@ -23,6 +23,7 @@ CREATE TABLE incidents (
 CREATE TABLE endpoints (
     endpoint_id SERIAL PRIMARY KEY,
     device_name VARCHAR(255) NOT NULL,
+    incident_id INTEGER REFERENCES incidents(incident_id) ON DELETE CASCADE,
     os VARCHAR(100),
     os_version VARCHAR(100),
     ip_address VARCHAR(45),

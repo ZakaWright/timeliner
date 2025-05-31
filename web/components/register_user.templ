@@ -1,7 +1,11 @@
 package components
 
-templ RegisterUser() {
-    @Base("Timeliner") {
+import (
+    "timeliner/internal/models"
+)
+
+templ RegisterUser(user *models.User) {
+    @Base("Timeliner", user) {
     <form action="/register" method="post">
     <div class="mb-3">
         <label for="register-username" class="form-label">Username</label>

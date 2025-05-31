@@ -1,0 +1,126 @@
+package components
+
+import (
+    "timeliner/internal/models"
+    "time"
+    "strconv"
+)
+
+templ Incident(user *models.User, incident *models.Incident, incident_user *models.User) {
+        @Base(incident.Name, user){
+            <div id="incident">
+            @IncidentInner(incident, incident_user)
+            </div>
+        // scrollspy for timeline
+    }
+
+}
+
+templ IncidentInner(incident *models.Incident, incident_user *models.User) {
+    @incidentInformation(incident, incident_user)
+        <div class="incident-window" id="incident-window">
+            <div class="d-flex">
+                <button type="button" class="btn btn-primary flex-grow-1"
+                    hx-get={"/incident/" + strconv.FormatInt(incident.ID, 10) + "/timeline"}
+                    hx-target="#incident-window"
+                    hx-swap="innerHTML"
+                >
+                // ../static/timeline_icon.png
+
+                View Timeline</button>
+            </div>
+
+            <br>
+            
+            <div class="row">
+                @endpoints(incident.ID)
+                @events(incident.ID)
+            </div>
+        </div>
+}
+templ incidentInformation(incident *models.Incident, incident_user *models.User) {
+    <div class="incidentInformation" id="incidentInformation">
+    if incident.Status == "closed" {
+        <div class="alert alert-primary" role="alert">This incident is closed</div>
+    }
+    <div class="d-flex justify-content-start" >
+        <h1 class="incidentName">{incident.Name}</h1>
+        <div class="flex-fill"></div>
+    <div class="creation d-flex-column">
+        <p id="incident-creator-username">Created by: {incident_user.Username}</p>
+        <p>Created at: {utcTime(incident.CreatedAt)}</p>
+        if incident.Status == "closed" && incident.ClosedAt != nil {
+            <p>Closed at: {utcTime(*incident.ClosedAt)}</p>
+            <div class="d-flex">
+            <button type="button" class="btn btn-primary flex-grow-1"
+                    hx-post={"/incident/" + strconv.FormatInt(incident.ID, 10) + "/reopen"}
+                    hx-trigger="click"
+                    hx-swap="innerHTML"
+                    hx-target="#incident"
+                >Reopen Incident</button>
+            </div>
+        } else {
+            <div class="d-flex">
+            <button type="button" class="btn btn-primary flex-grow-1"
+                    hx-post={"/incident/" + strconv.FormatInt(incident.ID, 10) + "/close"}
+                    hx-trigger="click"
+                    hx-swap="innerHTML"
+                    hx-target="#incident"
+                >Close Incident</button>
+            </div>
+        }
+    </div>
+    </div>
+    <blockquote class="blockquote">{incident.Description}</blockquote>
+    </div>
+    @modal()
+}
+
+templ endpoints(id int64) {
+    <div class="col endpointCards" id="endpointCards"
+        hx-get={strconv.FormatInt(id, 10) + "/endpoints"}
+        hx-trigger="load"
+        hx-swap="innerHTML"
+    ></div>
+}
+templ events(id int64) {
+    <div class="col eventCards" id="eventCards"
+        hx-get={strconv.FormatInt(id, 10) + "/events"}
+        hx-trigger="load"
+        hx-swap="innerHTML"
+    ></div>
+}
+
+func utcTime(t time.Time) string {
+    utc, _ := time.LoadLocation("Etc/UTC")
+    utc_creation := t.In(utc).Format("2006-01-02 15:04:05 UTC")
+    return utc_creation
+}
+
+templ Timeline(incident_id int64, incident_user *models.User) {
+    <div class="d-flex">
+    <button type="button" class="btn btn-primary flex-grow-1"
+        hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/overview"}
+        hx-target="#incident"
+        hx-swap="innerHTML"
+    >
+    // ../static/timeline_icon.png
+    View Overview</button>
+    </div>
+    <div class="timeline-container mt-5 mb-5">
+	
+    <!-- Section: Timeline 
+    Template adapted from https://mdbootstrap.com/docs/standard/extended/timeline/-->
+    <section class="py-5">
+    <ul class="timeline"
+        hx-get={strconv.FormatInt(incident_id, 10) + "/timeline-events"}
+        hx-trigger="load"
+        hx-swap="innerHTML"
+    >
+        
+    </ul>
+    </section>
+    <!-- Section: Timeline -->
+    
+</div>
+}

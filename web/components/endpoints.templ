@@ -1,0 +1,148 @@
+package components
+
+import (
+    "timeliner/internal/models"
+    "strconv"
+)
+
+templ Endpoints(incident_id int64, endpoints []*models.Endpoint) {
+    <div class="endpoints-list" id="endpoints-list">
+    <h1>Endpoints</h1>
+    if endpoints == nil || len(endpoints) < 1 {
+        <p>No endpoints</p>
+    } else {
+        <ul>
+        for _, endpoint := range endpoints {
+            <li>{endpoint.Name}</li>
+        }
+        </ul>
+    }
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal"
+        hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/endpoints/new"}
+        hx-target="#myModal"
+        hx-swap="innerHTML"
+    >New Event</button>
+    <script>
+        var modal = document.getElementById('myModal');
+        if (modal) {
+            var modal = bootstrap.Modal.getInstance(modal);
+            modal.hide();
+        }
+    </script>
+    </div>
+}
+
+templ EndpointsList(endpoints []*models.Endpoint) {
+    if len(endpoints) < 1 || endpoints == nil {
+        <p>No endpoints</p>
+    } else {
+        for _, endpoint := range endpoints {
+            <option value={endpoint.ID}>{endpoint.Name} ({endpoint.IP})</option>
+        }
+    }
+}
+
+templ NewEndpoint(id int64) {
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">New Endpoint</h4>
+                <button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+            </div>
+
+            <form id="new-endpoint"
+                hx-post={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints/new"}
+                hx-trigger="submit"
+                hx-target="#endpoints-list"
+                hx-swap="innerHTML">
+
+                <div class="modal-body">
+                    <label for="endpoint-name" class="form-label">Endpoint Name</label>
+                    <input type="text" class="form-control" id="endpoint-name" name="endpoint-name" required>
+                    // TODO adjust for UTC time/add timezone picker
+                    
+                    <label for="endpoint-os" class="form-label">OS</label>
+                        <select class="form-select" aria-label="OS Select" name="endpoint-os" id="endpoint-os">
+                            <option value="Windows 10">Windows 10</option>
+                            <option vlaue="Windows 11">Windows 11</option>
+                            <option value="MacOS">MacOS</option>
+                            <option value="Linux">Linux</option>
+                        </select>
+                    
+                    <label for="endpoint-ip" class="form-label">IP</label>
+                    <input type="text" class="form-control" id="endpoint-ip" name="endpoint-ip">
+
+                    <label for="endpoint-mac" class="form-label">MAC Address</label>
+                    <input type="text" class="form-control" id="endpoint-mac" name="endpoint-mac">
+                    
+
+                    <label for="endpoint-last-seen" class="form-label">Last Seen</label>
+                    <input type="datetime-local" class="form-control" id="endpoint-last-seen" name="endpoint-last-seen">
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="new-endpoint-submit" type="submit">Submit</button>
+                </div>
+            </form>          
+        </div>
+    </div>
+}
+
+templ InlineNewEndpoint(id int64) {
+    
+    <form id="new-endpoint"
+        hx-post={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints/new-inline"}
+        hx-target="#new-event-new-endpoint"
+        hx-swap="innerHTML">
+        <label for="endpoint-name" class="form-label">Endpoint Name</label>
+        <input type="text" class="form-control" id="endpoint-name" name="endpoint-name" required>
+        // TODO adjust for UTC time/add timezone picker
+        
+        <label for="endpoint-os" class="form-label">OS</label>
+            <select class="form-select" aria-label="OS Select" name="endpoint-os" id="endpoint-os">
+                <option value="Windows 10">Windows 10</option>
+                <option vlaue="Windows 11">Windows 11</option>
+                <option value="MacOS">MacOS</option>
+                <option value="Linux">Linux</option>
+            </select>
+        
+        <label for="endpoint-ip" class="form-label">IP</label>
+        <input type="text" class="form-control" id="endpoint-ip" name="endpoint-ip">
+
+        <label for="endpoint-mac" class="form-label">MAC Address</label>
+        <input type="text" class="form-control" id="endpoint-mac" name="endpoint-mac">
+        
+
+        <label for="endpoint-last-seen" class="form-label">Last Seen</label>
+        <input type="datetime-local" class="form-control" id="endpoint-last-seen" name="endpoint-last-seen">
+        
+        <br>
+        <div class="input-group d-flex">
+            <button class="btn btn-primary flex-grow-1" type="submit"
+               
+                id="endpoint-submit">Submit
+                /*
+                <div 
+                    hx-get={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints"}
+                    hx-trigger="click from:#endpoint-submit"
+                    hx-target="#endpointCards"
+                    hx-swap="innerHTML"
+                ></div>
+                */
+                <div
+                    hx-get={"/incident/" + strconv.FormatInt(id, 10) + "/endpoints/list"}
+                    hx-trigger="htmx:afterRequest from:new-endpoint"
+                    hx-target="#event-endpoint-select"
+                    hx-swap="innerHTML">
+                </div>
+                
+            </button>
+            <button class="btn btn-danger" 
+                hx-get={"/empty"}
+                hx-trigger="click"
+                hx-target="#new-event-new-endpoint"
+                hx-swap="innerHTML"
+            >Cancel</button>
+        </div>
+    </form>
+}

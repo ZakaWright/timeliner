@@ -8,7 +8,11 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func NewIncident() templ.Component {
+import (
+	"timeliner/internal/models"
+)
+
+func NewIncident(user *models.User) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -41,13 +45,13 @@ func NewIncident() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form id=\"new-incident\" class=\"new-incident\"><div class=\"mb-3\"><label for=\"incident-name\" class=\"form-label\">Incident Name</label> <input type=\"text\" class=\"form-control\" id=\"input-incident-name\"> <label for=\"case-number\" class=\"form-label\">Case Number</label> <input type=\"text\" class=\"form-control\" id=\"input-case-number\"> <label for=\"incident-description\" class=\"form-label\">Description</label> <textarea id=\"incident-description\" class=\"form-control\"></textarea> <input type=\"checkbox\" class=\"form-check-input\" value=\"\" id=\"check-case-status\" checked> <label for=\"check-case-status\" class=\"form-check-label\">Case Open</label></div></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <form id=\"new-incident\" hx-post=\"/incidents/new\" hx-target=\"#toast-container\" hx-swap=\"beforeend\"><div class=\"mb-3\"><label for=\"incident-name\" class=\"form-label\">Incident Name</label> <input type=\"text\" class=\"form-control\" name=\"incident-name\" id=\"input-incident-name\" required> <label for=\"case-number\" class=\"form-label\">Case Number</label> <input type=\"text\" class=\"form-control\" name=\"case-number\" id=\"input-case-number\" required> <label for=\"incident-description\" class=\"form-label\">Description</label> <textarea id=\"incident-description\" name=\"description\" class=\"form-control\"></textarea><br><input type=\"checkbox\" class=\"form-check-input\" value=\"\" name=\"status\" id=\"check-case-status\" checked> <label for=\"check-case-status\" name=\"status\" class=\"form-check-label\">Case Open</label><br><br><button type=\"submit\" class=\"btn btn-primary\">Submit</button></div></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Base("New Incident").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Base("New Incident", user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
