@@ -95,3 +95,4 @@ INSERT INTO ioc_types (type_name, description) VALUES
     ('email', 'Email address'),
     ('process', 'Process name or path'),
     ('registry', 'Windows registry key or value');
+

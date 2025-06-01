@@ -3,6 +3,7 @@ package components
 import (
     "timeliner/internal/models"
     "strconv"
+
 )
 
 templ Events(incident_id int64, events []*models.Event) {
@@ -11,11 +12,26 @@ templ Events(incident_id int64, events []*models.Event) {
     if events == nil || len(events) < 1 {
         <p>No Events</p>
     } else {
+        /*
         <ul id="events-list-ul">
         for _, event := range events {
             <li>{event.EventType}:{utcTime(event.EventTime)}</li>
         }
         </ul>
+        */
+        for _, event := range events {
+            <div class="event border rounded my-2 p-2" id={"event-" + strconv.FormatInt(event.ID, 10)}
+                hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/event/" + strconv.FormatInt(event.ID, 10) + "/details"}
+                hx-target="#myModal"
+                hx-swap="innerHTML"
+                data-bs-toggle="modal"
+                data-bs-target="#myModal"
+                >
+                <h5>{event.EventType}</h5>
+                <p>{utcTime(event.EventTime)}</p>
+
+            </div>
+        }
     }
 
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal"
@@ -90,7 +106,9 @@ templ NewEvent(id int64) {
 
                     <label for="event-description" class="form-label">Description</label>
                     <textarea name="event-description" id="event-description" class="form-control"></textarea>
+                    @NewEventIOCs()
                 </div>
+                
                 <div class="modal-footer">
                     <button class="btn btn-primary" id="new-event-submit" type="submit">Submit
                         <div
@@ -106,20 +124,134 @@ templ NewEvent(id int64) {
     </div>
 }
 
-templ TimelineEvent(incident_id int64, events []*models.Event) {
-    if events == nil || len(events) < 1 {
+templ NewEventIOCs() {
+    <label for="new-iocs" class="form-label">IOCs</label>
+    <div id="new-iocs">
+        <div class="input-group" id="ioc">
+            <select name="ioc-type" id="ioc-type" class="form-select d-inline w-25">
+                <option value="ip_address">IP Address</option>
+                <option value="domain">Domain</option>
+                <option value="file_name">File Name or Path</option>
+                <option value="email">Email</option>
+                <option value="process">Process Name or Path</option>
+                <option value="registry">Registry Path or Key Value</option>
+            </select>
+            <input type="text" aria-label="ioc" class="form-control" name="ioc-value">
+        </div>
+    </div>
+    <button type="button" class="btn btn-secondary" onclick="addIOC()">Add IOC</button>
+    <script>
+        function addIOC() {
+            var iocs = document.getElementById('ioc');
+            var new_ioc = document.createElement('div');
+            new_ioc.className = 'ioc';
+            new_ioc.innerHTML = `
+            <div class="input-group" id="ioc">
+                    <select name="ioc-type" id="ioc-type" class="form-select d-inline w-25">
+                        <option vlaue="ip_address">IP Address</option>
+                        <option value="domain">Domain</option>
+                        <option value="file_name">File Name or Path</option>
+                        <option value="email">Email</option>
+                        <option value="process">Process Name or Path</option>
+                        <option value="registry">Registry Path or Key Value</option>
+                    </select>
+                    <input type="text" aria-label="ioc" class="form-control" name="ioc-value">
+                </div> 
+            `;
+            iocs.appendChild(new_ioc);
+
+        }
+    </script>
+}
+
+templ TimelineEvent(incident_id int64, eventDetails []*models.EventDetails) {
+    if events == nil || len(eventDetails) < 1 {
         <p>No events</p>
     } else {
-        for _, event := range events {
-            <li class="timeline-item mb-5"
+        for _, event := range eventDetails {
+            /*<li class="timeline-item mb-5"
                 data-bs-toggle="modal" data-bs-target="#myModal"
-                hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/new"}
+                hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/event/" + strconv.FormatInt(event.Event.ID, 10) + "/details"}
                 hx-target="#myModal"
                 hx-swap="innerHTML"
-            >
-                <h5 class="fw-bold">{event.EventType}</h5>
-                <p class="text-muted mb-2 fw-bold">{utcTime(event.EventTime)} UTC</p>
+            >*/
+            <li class="timeline-item mb-5" data-bs-toggle="collapse"
+                data-bs-target={"#eventCollapse" + strconv.FormatInt(event.Event.ID, 10)}
+                aria-expanded="false" aria-controls={"#eventCollapse" + strconv.FormatInt(event.Event.ID, 10)}>
+                <div class="timeline-header d-inline-flex">
+                    <h5 class="fw-bold">{event.Event.EventType}</h5>
+                    <p class="text-muted mb-2 mx-3">{len(event.Comments)} Comments</p>
+                </div>
+                <p class="text-muted mb-2 fw-bold">{utcTime(event.Event.EventTime)} UTC</p>
+                //<ul>
+                if event.IOCs != nil && len(event.IOCs) > 0 {
+                    for _, ioc := range event.IOCs {
+                    //<li>{ioc.IocType} {ioc.Value}</li>
+                    <p class="mb-2">{ioc.IocDescription} {ioc.Value}</p>
+                }
+                }
+                
             </li>
+            <div class="collapse" id={"eventCollapse" + strconv.FormatInt(event.Event.ID, 10)}>
+                <div class="comments" id={"eventComments-" + strconv.FormatInt(event.Event.ID, 10)}>
+                    @Comments(incident_id, event)
+                </div>
+
+            </div>
         }
     }
+}
+
+templ Comments(incident_id int64, event *models.EventDetails) {
+    if event.Comments != nil && len(event.Comments) > 0 {
+            <ul>
+            for _, comment := range event.Comments {
+                <li id={"comment-" + strconv.FormatInt(comment.ID, 10)}>
+                    <div class="d-inline-flex">
+                        <p class="p-2 flex-grow-1">{comment.Comment}</p>
+                        <p class="p-2">From {comment.UserName}</p>
+                    </div>
+                </li>
+            }
+            </ul>
+        }
+        <form 
+            hx-post={"/incident/" + strconv.FormatInt(incident_id, 10) + "/event/" + strconv.FormatInt(event.Event.ID, 10) + "/new-comment"}
+            hx-target={"#eventComments-" + strconv.FormatInt(event.Event.ID, 10)}
+            hx-swap="innerHTML"
+        >
+            <textarea name="new-comment" id="new-comment"></textarea>
+            <button class="btn btn primary" id="submit-comment" type="submit">Add Comment</button>
+        </form>
+}
+
+
+templ EventDetails(incident_id int64, event *models.EventDetails) {
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">{event.Event.EventType}</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <!-- Modal body -->
+                <div class="modal-body">
+                    <h5>IOCs</h5>
+                    if event.IOCs == nil || len(event.IOCs) < 1 {
+                        <p>No IOCs</p>
+                    }
+                    for _, ioc := range event.IOCs {
+                        <p>{ioc.IocDescription} {ioc.Value}</p>
+                    }
+                    <h5>Comments</h5>
+                    <div class="comments" id={"eventComments-" + strconv.FormatInt(event.Event.ID, 10)}>
+                        @Comments(incident_id, event)
+                    </div>
+                </div>
+                
+
+        </div>
+    </div>
+
 }

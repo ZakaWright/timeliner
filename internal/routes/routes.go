@@ -77,6 +77,7 @@ func NewRouter(app *app.App) http.Handler {
 
 				router.Route("/event", func(router chi.Router) {
 					router.Get("/{event_id}/details", h.GetEventDetails)
+					router.Post("/{event_id}/new-comment", h.PostNewComment)
 				})
 			})
 		})
@@ -315,7 +316,6 @@ func (h *Handler) GetIncidentEvents(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Error: %v", err)
 		return
 	}
-	fmt.Printf("Events: \n%v\n", events)
 
 	component := components.Events(intID, events)
 	component.Render(r.Context(), w)
@@ -487,6 +487,8 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 	event_type := r.PostForm.Get("event-type")
 	endpoint := r.PostForm.Get("event-endpoint")
 	description := r.PostForm.Get("event-description")
+	iocTypes := r.PostForm["ioc-type"]
+	iocValues := r.PostForm["ioc-value"]
 
 	// get user
 	user := h.validate_user(r)
@@ -522,6 +524,14 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("ERROR IN INSERT")
 
 	}
+
+	for i := range len(iocTypes) {
+		_, err := h.App.Models.Events.InsertIOC(event_id, user.ID, iocTypes[i], iocValues[i])
+		if err != nil {
+			fmt.Printf("Error in IOC Insert %v", err)
+		}
+	}
+
 	if err != nil {
 		if strings.Contains(err.Error(), "failed to create") {
 			//w.WriteHeader(http.StatusBadRequest)
@@ -658,7 +668,7 @@ func (h *Handler) GetTimelineEvents(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid event ID", http.StatusBadRequest)
 		return
 	}
-	events, err := h.App.Models.Events.GetEventsForIncident(intID)
+	events, err := h.App.Models.Events.GetEventDetailsForIncident(intID)
 	if err != nil {
 		http.Error(w, "Error retreiving events", http.StatusBadRequest)
 	}
@@ -667,20 +677,58 @@ func (h *Handler) GetTimelineEvents(w http.ResponseWriter, r *http.Request) {
 	component.Render(r.Context(), w)
 }
 func (h *Handler) GetEventDetails(w http.ResponseWriter, r *http.Request) {
-	/*
-		id := chi.URLParam(r, "id")
-		intID, err := strconv.ParseInt(id, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid event ID", http.StatusBadRequest)
-			return
-		}
-		event_id := chi.URLParam(r, "event_id")
-		intEvent_id, err := strconv.ParseInt(event_id, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid event ID", http.StatusBadRequest)
-		}
-	*/
+	id := chi.URLParam(r, "id")
+	intID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid event ID", http.StatusBadRequest)
+		return
+	}
+	event_id := chi.URLParam(r, "event_id")
+	intEvent_id, err := strconv.ParseInt(event_id, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid event ID", http.StatusBadRequest)
+	}
 
+	eventDetails, err := h.App.Models.Events.GetEventDetails(intEvent_id)
+	if err != nil {
+		http.Error(w, "Invalid event ID", http.StatusBadRequest)
+	}
+
+	component := components.EventDetails(intID, eventDetails)
+	component.Render(r.Context(), w)
+
+}
+func (h *Handler) PostNewComment(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("New Comment")
+	id := chi.URLParam(r, "id")
+	incident_id, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid incident ID", http.StatusBadRequest)
+	}
+
+	id = chi.URLParam(r, "event_id")
+	event_id, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid event ID", http.StatusBadRequest)
+	}
+	// get comment
+	r.ParseForm()
+	newComment := r.PostForm.Get("new-comment")
+
+	// get user
+	user := h.validate_user(r)
+
+	err = h.App.Models.Events.AddComment(event_id, user.ID, newComment)
+	if err != nil {
+		http.Error(w, "Problem adding comment", http.StatusBadRequest)
+	}
+
+	event_details, err := h.App.Models.Events.GetEventDetails(event_id)
+	if err != nil {
+		http.Error(w, "Problem getting event details", http.StatusBadRequest)
+	}
+	component := components.Comments(incident_id, event_details)
+	component.Render(r.Context(), w)
 }
 
 // macro for new function: @n
