@@ -4,7 +4,7 @@ This is an Incident Response timeline tool made for DSU's CSC_842 S
 
 ## Project Overview/Motivation
 
-This project was designed to end the 'spreadsheet of death' common in incident response. A few alternative tools exist such as [Aurora IR](https://github.com/cyb3rfox/Aurora-Incident-Response), but are out of date or lack modern collaboration features.
+This project was designed to end the 'spreadsheet of death' common in incident response. A few alternative tools exist such as [Aurora IR](https://github.com/cyb3rfox/Aurora-Incident-Response), but are out of support or lack modern collaboration features.
 
 ## Tech Stack
 This project is built using the GOTH stack with a PostgreSQL database. The GOTH stack is made up of a Golang webserver using Templ templates and HTMX.
