@@ -1,6 +1,6 @@
 # Timeliner
 
-This is an Incident Response timeline tool made for DSU's CSC_842 S
+This is an Incident Response timeline tool made for DSU's CSC_842 Security Tool Development Course
 
 ## Project Overview/Motivation
 
