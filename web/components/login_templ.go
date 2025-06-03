@@ -33,7 +33,7 @@ func Login() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"p-3\"><form action=\"/login\" method=\"post\"><div class=\"mb-3\"><label for=\"login-username\" class=\"form-label\">Username</label> <input type=\"text\" class=\"form-control\" id=\"login-username\" name=\"login-username\"></div><div class=\"mb-3\"><label for=\"login-password\" class=\"form-label\">Password</label> <input type=\"password\" class=\"form-control\" id=\"login-password\" name=\"login-password\"></div><button type=\"submit\" class=\"btn btn-primary\">Submit</button></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"p-3\" id=\"login-register\"><form action=\"/login\" method=\"post\"><div class=\"mb-3\"><label for=\"login-username\" class=\"form-label\">Username</label> <input type=\"text\" class=\"form-control\" id=\"login-username\" name=\"login-username\"></div><div class=\"mb-3\"><label for=\"login-password\" class=\"form-label\">Password</label> <input type=\"password\" class=\"form-control\" id=\"login-password\" name=\"login-password\"></div><button type=\"submit\" class=\"btn btn-primary\">Submit</button></form><p>or</p><a href=\"/register\">Register</a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

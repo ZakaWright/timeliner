@@ -175,7 +175,6 @@ func (h *Handler) Incidents(w http.ResponseWriter, r *http.Request) {
 		//http.Error(w, "Failed to fetch closed incidents", http.StatusInternalServerError)
 		closed_incidents = []*models.Incident{}
 	}
-	fmt.Printf("Open Incidents: %v", open_incidents)
 	component := components.Incidents(h.validate_user(r), open_incidents, closed_incidents)
 	component.Render(r.Context(), w)
 }

@@ -29,7 +29,8 @@ CREATE TABLE endpoints (
     ip_address VARCHAR(45),
     mac_address VARCHAR(17),
     last_seen TIMESTAMP WITH TIME ZONE,
-    added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    investigated BOOLEAN DEFAULT FALSE
 );
 
 -- IOC types reference table
@@ -59,16 +60,23 @@ CREATE TABLE ioc_attributes (
     UNIQUE (ioc_id, attribute_name)  -- Each IOC can have each attribute only once
 );
 
+-- MITRE ATT&CK tactics
+CREATE TABLE mitre_tactic (
+    tactic_id VARCHAR(6) PRIMARY KEY,
+    name VARCHAR(100)
+);
+
 -- Timeline events table
 CREATE TABLE events (
     event_id SERIAL PRIMARY KEY,
     incident_id INTEGER REFERENCES incidents(incident_id) ON DELETE CASCADE,
     event_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    event_type VARCHAR(100) NOT NULL,  -- detection, analysis, containment, etc.
+    event_type VARCHAR(100),  -- detection, analysis, containment, etc.
     description TEXT,
     created_by INTEGER REFERENCES users(user_id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    endpoint_id INTEGER REFERENCES endpoints(endpoint_id)
+    endpoint_id INTEGER REFERENCES endpoints(endpoint_id),
+    mitre_tactic VARCHAR(6) REFERENCES mitre_tactic(tactic_id)
 );
 
 -- Event-IOC relationship table
@@ -88,11 +96,32 @@ CREATE TABLE event_comments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+
 INSERT INTO ioc_types (type_name, description) VALUES
-    ('ip_address', 'IPv4 or IPv6 address'),
+    --('ip_address', 'IPv4 or IPv6 address'),
+    ('src_ip', 'Source IP address'),
+    ('dst_ip', 'Destination IP address'),
+    ('src_port', 'Source Port'),
+    ('dst_port', 'Destination Port'),
     ('domain', 'Domain name'),
     ('file_name', 'File name or path'),
     ('email', 'Email address'),
     ('process', 'Process name or path'),
     ('registry', 'Windows registry key or value');
 
+INSERT INTO mitre_tactic (tactic_id, name) VALUES
+    ('TA0043', 'Reconnaissance'),
+    ('TA0042', 'Resource Development'),
+    ('TA0001', 'Initial Access'),
+    ('TA0002', 'Execution'),
+    ('TA0003', 'Persistence'),
+    ('TA0004', 'Privilege Escalation'),
+    ('TA0005', 'Defense Evasion'),
+    ('TA0006', 'Credential Access'),
+    ('TA0007', 'Discovery'),
+    ('TA0008', 'Lateral Movement'),
+    ('TA0009', 'Collection'),
+    ('TA0011', 'Command and Control'),
+    ('TA0010', 'Exfiltration'),
+    ('TA0040', 'Impact'),
+    ('NONE', 'Unknown');

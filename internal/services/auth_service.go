@@ -136,7 +136,6 @@ func (auth AuthService) RegisterUser(w http.ResponseWriter, r *http.Request, use
 
 func (auth AuthService) GetUser(r *http.Request, user_model models.UserModel) (*models.User, error) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
-	fmt.Printf("Claims: %v", claims)
 	if claims["user_id"] == nil {
 		return nil, nil
 	}

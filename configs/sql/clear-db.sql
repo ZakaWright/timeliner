@@ -1,1 +1,1 @@
-DROP TABLE users, incidents, endpoints, ioc_types, iocs, ioc_attributes, events, event_iocs, event_comments CASCADE;
+DROP TABLE users, incidents, endpoints, ioc_types, iocs, ioc_attributes, events, event_iocs, event_comments, mitre_tactic CASCADE;
