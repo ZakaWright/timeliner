@@ -4,6 +4,7 @@ import (
     "timeliner/internal/models"
     "time"
     "strconv"
+    "github.com/jackc/pgtype"
 )
 
 templ Incident(user *models.User, incident *models.Incident, incident_user *models.User) {
@@ -42,6 +43,14 @@ templ incidentInformation(incident *models.Incident, incident_user *models.User)
     <div class="incidentInformation" id="incidentInformation">
     if incident.Status == "closed" {
         <div class="alert alert-primary" role="alert">This incident is closed</div>
+    } else {
+
+        <div hx-ext="sse" 
+            sse-connect={"/incident/" + strconv.FormatInt(incident.ID, 10) + "/events/stream"}
+            sse-swap="message"
+            hx-target="#eventCards"
+            hx-swap="innerHTML">
+        </div>
     }
     <div class="d-flex justify-content-start" >
         <h1 class="incidentName">{incident.Name}</h1>
@@ -91,9 +100,9 @@ templ events(id int64) {
     ></div>
 }
 
-func utcTime(t time.Time) string {
+func utcTime(t pgtype.Timestamp) string {
     utc, _ := time.LoadLocation("Etc/UTC")
-    utc_creation := t.In(utc).Format("2006-01-02 15:04:05 UTC")
+    utc_creation := t.Time.In(utc).Format("2006-01-02 15:04:05 UTC")
     return utc_creation
 }
 

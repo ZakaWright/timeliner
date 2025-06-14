@@ -1,6 +1,7 @@
 package routes
 
 import (
+	//"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -8,22 +9,29 @@ import (
 	"time"
 
 	"timeliner/internal/app"
+	"timeliner/internal/broadcaster"
 	"timeliner/internal/models"
 	"timeliner/web/components"
 
+	//"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5"
+	//"golang.org/x/text/message"
 )
 
 type Handler struct {
 	App *app.App
+	Broadcaster *broadcaster.Broadcaster
 }
 
 func NewRouter(app *app.App) http.Handler {
 	// create handler
-	h := &Handler{App: app}
+	b := broadcaster.NewBroadcaster()
+	go b.Listen()
+	h := &Handler{App: app, Broadcaster: b}
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
@@ -68,6 +76,7 @@ func NewRouter(app *app.App) http.Handler {
 				})
 				router.Route("/events", func(router chi.Router) {
 					router.Get("/", h.GetIncidentEvents)
+					router.Get("/stream", h.EventStream)
 
 					router.Route("/new", func(router chi.Router) {
 						router.Get("/", h.GetNewEvent)
@@ -90,6 +99,7 @@ func NewRouter(app *app.App) http.Handler {
 	})
 	// returns an empty div to clear an element
 	router.Get("/empty", h.Empty)
+	router.Get("/test", h.Test)
 
 	router.Route("/login", func(router chi.Router) {
 		router.Get("/", h.Login)
@@ -492,6 +502,7 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 	// get user
 	user := h.validate_user(r)
 
+	/*
 	var parsedTime time.Time
 	if eventTime != "" {
 		t, err := time.Parse("2006-01-02 15:04:05", eventTime)
@@ -499,6 +510,18 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 			parsedTime = t
 		}
 	}
+	*/
+	var timestamp pgtype.Timestamp
+	if eventTime != "" {
+		t, err := time.Parse("2006-01-02 15:04:05", eventTime)
+		if err != nil {
+			fmt.Printf("Error parsing time: %v\n", err)
+		}
+		timestamp = pgtype.Timestamp{
+			Time: t,
+		}
+	}
+
 	var parsedEndpoint int64
 	if endpoint != "" {
 		e, err := strconv.ParseInt(endpoint, 10, 64)
@@ -510,7 +533,8 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 	var event models.Event
 	// create the object
 	event.Incident = intID
-	event.EventTime = parsedTime
+	//event.EventTime = parsedTime
+	event.EventTime = timestamp
 	event.EventType = event_type
 	event.Description = description
 	event.CreatedBy = user.ID
@@ -545,6 +569,9 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// TODO broadcast using SSE 
+	var new_event string = fmt.Sprintf("'incident_id': %d;\n'event_id: %d;'", intID, event_id)
+	h.Broadcaster.Broadcast <- new_event
 	h.GetIncidentEvents(w, r)
 }
 func (h *Handler) Empty(w http.ResponseWriter, r *http.Request) {
@@ -698,7 +725,6 @@ func (h *Handler) GetEventDetails(w http.ResponseWriter, r *http.Request) {
 
 }
 func (h *Handler) PostNewComment(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("New Comment")
 	id := chi.URLParam(r, "id")
 	incident_id, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -729,5 +755,62 @@ func (h *Handler) PostNewComment(w http.ResponseWriter, r *http.Request) {
 	component := components.Comments(incident_id, event_details)
 	component.Render(r.Context(), w)
 }
+func (h *Handler) Test(w http.ResponseWriter, r *http.Request) {
+	component := components.Test()
+	component.Render(r.Context(), w)
+}
 
+func (h *Handler) EventStream(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+	// set headers to allow all origins.
+	// using a tutorial from https://medium.com/@rian.eka.cahya/server-sent-event-sse-with-go-10592d9c2aa1
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// establish new connection channel
+	messageChannel := make(chan string)
+	//h.Broadcaster.newConnection <- messageChannel
+	h.Broadcaster.NewConnection <- messageChannel
+	defer func() {
+		h.Broadcaster.CloseConnection <- messageChannel
+	}()
+	closedConnection := r.Context().Done()
+	go func() {
+		<-closedConnection
+		h.Broadcaster.CloseConnection <- messageChannel
+	}()
+	// wait for channel events
+	for {
+		fmt.Fprintf(w, "event: SSETest\n\n")
+		fmt.Fprintf(w, "data: %s\n\n", <-messageChannel)
+		flusher.Flush()
+	}
+
+	/*
+	component := components.Test()
+
+	var html string
+	html, err := templ.ToGoHTML(context.Background(), component)
+	if err != nil {
+	}
+	//component.Render(r.Context(), w)
+	fmt.Fprintf(w, "event: SSETest\n\n")
+	//fmt.Fprintf(w, "data: %s\n\n", fmt.Sprintf("<h2>Event</h2>"))
+	fmt.Fprintf(w, "data: %s\n\n", fmt.Sprintf("%v", html))
+	//time.Sleep(2 * time.Second)
+	w.(http.Flusher).Flush()
+	// close Connection
+	*/
+	/*
+	closeNotify := w.(http.CloseNotifier).CloseNotify()
+	<-closeNotify
+	*/
+}
 // macro for new function: @n

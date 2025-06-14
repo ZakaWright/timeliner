@@ -7,12 +7,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgtype"
 )
 
 type Event struct {
-	ID          int64     `json:"id"`
-	Incident    int64     `json:"incident"`
-	EventTime   time.Time `json:"event_time"`
+	ID          int64     			`json:"id"`
+	Incident    int64     			`json:"incident"`
+	EventTime   pgtype.Timestamp	`json:"event_time"`
+	//EventTime   time.Time `json:"event_time"`
 	EventType   string    `json:"event_type"`
 	Description string    `json:"description"`
 	CreatedBy   int64     `json:"created_by"`
@@ -47,7 +49,8 @@ type EventDetails struct {
 type REvent struct {
 	ID          int64     `json:"id"`
 	Incident    int64     `json:"incident"`
-	EventTime   time.Time `json:"event_time"`
+	EventTime   pgtype.Timestamp	`json:"event_time"`
+	//EventTime   time.Time `json:"event_time"`
 	EventType   string    `json:"event_type"`
 	Description string    `json:"description"`
 	CreatedBy   *User     `json:"created_by"`
@@ -153,8 +156,17 @@ func (m EventModel) InsertIOC(event_id, added_by int64, ioc_type, value string) 
 }
 
 func (m EventModel) GetEventsForIncident(incident_id int64) ([]*Event, error) {
+	/*
 	query := `
 		SELECT event_id, event_time, event_type, description, created_by, endpoint_id
+		FROM events
+		WHERE incident_id=$1
+		ORDER BY event_time
+	`
+	*/ 
+	//TODO get the mitre tactic as well
+	query := `
+		SELECT event_id, event_time, description, created_by, endpoint_id
 		FROM events
 		WHERE incident_id=$1
 		ORDER BY event_time
@@ -169,26 +181,20 @@ func (m EventModel) GetEventsForIncident(incident_id int64) ([]*Event, error) {
 	for rows.Next() {
 		var event Event
 		//var createdBy int64
+
 		err := rows.Scan(
 			&event.ID,
 			&event.EventTime,
-			&event.EventType,
+			//&event.EventType,
 			&event.Description,
 			&event.CreatedBy,
 			&event.Endpoint,
 		)
 		if err != nil {
+			fmt.Printf("Erorr: %v", err)
 			return nil, err
 		}
 
-		/*
-			user_model := UserModel(m)
-			user, err := user_model.GetByID(createdBy)
-			if err != nil {
-				return nil, err
-			}
-			event.CreatedBy = user
-		*/
 		events = append(events, &event)
 	}
 

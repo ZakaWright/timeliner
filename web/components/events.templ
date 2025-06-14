@@ -5,12 +5,25 @@ import (
     "strconv"
 
 )
+templ Test() {
+    <h2>Stream Event</h2>
+}
 
 templ Events(incident_id int64, events []*models.Event) {
     <div class="events-list" id="events-list">
     <h1>Events</h1>
+    <h2>SSE Test</h2>
+    //<div hx-ext="sse" sse-connect={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/stream"} sse-swap="SSETest"></div>
+    <div hx-ext="sse" 
+        sse-connect={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/stream"}
+     sse-swap="message"
+     hx-target="#sse-test"
+     hx-swap="innerHTML">
+        <div class="sse-test" id="sse-test"></div>
+    </div>
     if events == nil || len(events) < 1 {
         <p>No Events</p>
+
     } else {
         /*
         <ul id="events-list-ul">

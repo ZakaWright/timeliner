@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgtype"
 )
 
 type Incident struct {
@@ -16,9 +16,11 @@ type Incident struct {
 	Description string     `json:"description"`
 	CaseNumber  string     `json:"case_number"`
 	Status      string     `json:"status"`
-	CreatedAt   time.Time  `json:"created_at"`
+	CreatedAt   pgtype.Timestamp	`json:"created_at"`
+	//CreatedAt   time.Time  `json:"created_at"`
 	CreatedBy   int64      `json:"created_by"`
-	ClosedAt    *time.Time `json:"closed_at"` // pointer is to account for null values (unclosed incidents)
+	ClosedAt    *pgtype.Timestamp `json:"closed_at"` // pointer is to account for null values (unclosed incidents)
+	//ClosedAt    *time.Time `json:"closed_at"` // pointer is to account for null values (unclosed incidents)
 }
 
 type IncidentModel struct {
