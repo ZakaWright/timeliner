@@ -10,17 +10,14 @@ templ Test() {
 }
 
 templ Events(incident_id int64, events []*models.Event) {
-    <div class="events-list" id="events-list">
-    <h1>Events</h1>
-    <h2>SSE Test</h2>
-    //<div hx-ext="sse" sse-connect={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/stream"} sse-swap="SSETest"></div>
     <div hx-ext="sse" 
         sse-connect={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/stream"}
-     sse-swap="message"
-     hx-target="#sse-test"
-     hx-swap="innerHTML">
-        <div class="sse-test" id="sse-test"></div>
+        sse-swap="none"
+    >
     </div>
+    <div class="events-list" id="events-list">
+    <h1>Events</h1>
+    //<div hx-ext="sse" sse-connect={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/stream"} sse-swap="SSETest"></div>
     if events == nil || len(events) < 1 {
         <p>No Events</p>
 
@@ -64,7 +61,7 @@ templ Events(incident_id int64, events []*models.Event) {
 
 }
 
-templ NewEvent(id int64) {
+templ NewEvent(id int64, iocTypes []* models.IOCType) {
     <div class="modal-dialog">
         <div class="modal-content">
 
@@ -119,7 +116,7 @@ templ NewEvent(id int64) {
 
                     <label for="event-description" class="form-label">Description</label>
                     <textarea name="event-description" id="event-description" class="form-control"></textarea>
-                    @NewEventIOCs()
+                    @NewEventIOCs(iocTypes)
                 </div>
                 
                 <div class="modal-footer">
@@ -137,17 +134,15 @@ templ NewEvent(id int64) {
     </div>
 }
 
-templ NewEventIOCs() {
+templ NewEventIOCs(iocTypes []* models.IOCType) {
     <label for="new-iocs" class="form-label">IOCs</label>
     <div id="new-iocs">
         <div class="input-group" id="ioc">
             <select name="ioc-type" id="ioc-type" class="form-select d-inline w-25">
-                <option value="ip_address">IP Address</option>
-                <option value="domain">Domain</option>
-                <option value="file_name">File Name or Path</option>
-                <option value="email">Email</option>
-                <option value="process">Process Name or Path</option>
-                <option value="registry">Registry Path or Key Value</option>
+                for _, iocType := range iocTypes {
+                    <option value={iocType.Name}>{iocType.Description}</option>
+                    
+                }
             </select>
             <input type="text" aria-label="ioc" class="form-control" name="ioc-value">
         </div>

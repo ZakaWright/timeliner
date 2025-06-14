@@ -16,10 +16,10 @@ type Incident struct {
 	Description string     `json:"description"`
 	CaseNumber  string     `json:"case_number"`
 	Status      string     `json:"status"`
-	CreatedAt   pgtype.Timestamp	`json:"created_at"`
+	CreatedAt   pgtype.Timestamptz	`json:"created_at"`
 	//CreatedAt   time.Time  `json:"created_at"`
 	CreatedBy   int64      `json:"created_by"`
-	ClosedAt    *pgtype.Timestamp `json:"closed_at"` // pointer is to account for null values (unclosed incidents)
+	ClosedAt    *pgtype.Timestamptz `json:"closed_at"` // pointer is to account for null values (unclosed incidents)
 	//ClosedAt    *time.Time `json:"closed_at"` // pointer is to account for null values (unclosed incidents)
 }
 

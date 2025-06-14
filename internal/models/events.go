@@ -13,7 +13,7 @@ import (
 type Event struct {
 	ID          int64     			`json:"id"`
 	Incident    int64     			`json:"incident"`
-	EventTime   pgtype.Timestamp	`json:"event_time"`
+	EventTime   pgtype.Timestamptz	`json:"event_time"`
 	//EventTime   time.Time `json:"event_time"`
 	EventType   string    `json:"event_type"`
 	Description string    `json:"description"`
@@ -40,6 +40,13 @@ type IOC struct {
 	IsMalicious    bool      `json:'is_malicious'`
 }
 
+type IOCType struct {
+	ID int64
+	Name string
+	Description string
+	
+}
+
 type EventDetails struct {
 	Event    *Event     `json:'event'`
 	Comments []*Comment `json:'comments'`
@@ -49,7 +56,7 @@ type EventDetails struct {
 type REvent struct {
 	ID          int64     `json:"id"`
 	Incident    int64     `json:"incident"`
-	EventTime   pgtype.Timestamp	`json:"event_time"`
+	EventTime   pgtype.Timestamptz	`json:"event_time"`
 	//EventTime   time.Time `json:"event_time"`
 	EventType   string    `json:"event_type"`
 	Description string    `json:"description"`
@@ -105,11 +112,44 @@ func (m EventModel) Insert(event *Event) (int64, error) {
 	)
 
 	if err != nil {
-		fmt.Printf("Error in event creation: %v", err)
 		return -1, fmt.Errorf("failed to create event %v", err)
 	}
-	fmt.Println("No error in event creation")
 	return int64(id), nil
+}
+
+func (m EventModel) GetIOCTypes() ([]* IOCType, error) {
+	query := `
+		SELECT ioc_type_id, type_name, description
+		FROM ioc_types
+	`
+
+	rows, err := m.DB.Query(m.CTX, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var iocTypes []*IOCType
+	for rows.Next() {
+		var iocType IOCType
+		//var createdBy int64
+
+		err := rows.Scan(
+			&iocType.ID,
+			&iocType.Name,
+			&iocType.Description,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		iocTypes = append(iocTypes, &iocType)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return iocTypes, nil
 }
 
 func (m EventModel) InsertIOC(event_id, added_by int64, ioc_type, value string) (int64, error) {
@@ -124,9 +164,6 @@ func (m EventModel) InsertIOC(event_id, added_by int64, ioc_type, value string) 
 	if err != nil {
 		return -1, fmt.Errorf("failed to get ioc_type_id %v", err)
 	}
-
-	fmt.Println("Got IOC Type")
-
 	// create the IOC
 	var ioc_id int32
 	query = `
@@ -140,8 +177,6 @@ func (m EventModel) InsertIOC(event_id, added_by int64, ioc_type, value string) 
 		return -1, fmt.Errorf("failed to create ioc %v", err)
 	}
 
-	fmt.Println("Created IOC ")
-
 	// insert into the cross reference table
 	query = `
 		INSERT INTO event_iocs (event_id, ioc_id)
@@ -151,7 +186,6 @@ func (m EventModel) InsertIOC(event_id, added_by int64, ioc_type, value string) 
 	if err != nil {
 		return -1, fmt.Errorf("failed to insert into event-ioc table event_id: %d, %v", event_id, err)
 	}
-	fmt.Println("Inserted into cross table")
 	return int64(ioc_id), nil
 }
 
@@ -166,7 +200,7 @@ func (m EventModel) GetEventsForIncident(incident_id int64) ([]*Event, error) {
 	*/ 
 	//TODO get the mitre tactic as well
 	query := `
-		SELECT event_id, event_time, description, created_by, endpoint_id
+		SELECT event_id, event_time, event_type, description, created_by, endpoint_id
 		FROM events
 		WHERE incident_id=$1
 		ORDER BY event_time
@@ -185,13 +219,12 @@ func (m EventModel) GetEventsForIncident(incident_id int64) ([]*Event, error) {
 		err := rows.Scan(
 			&event.ID,
 			&event.EventTime,
-			//&event.EventType,
+			&event.EventType,
 			&event.Description,
 			&event.CreatedBy,
 			&event.Endpoint,
 		)
 		if err != nil {
-			fmt.Printf("Erorr: %v", err)
 			return nil, err
 		}
 

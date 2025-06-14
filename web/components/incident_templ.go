@@ -379,7 +379,7 @@ func events(id int64) templ.Component {
 	})
 }
 
-func utcTime(t pgtype.Timestamp) string {
+func utcTime(t pgtype.Timestamptz) string {
 	utc, _ := time.LoadLocation("Etc/UTC")
 	utc_creation := t.Time.In(utc).Format("2006-01-02 15:04:05 UTC")
 	return utc_creation

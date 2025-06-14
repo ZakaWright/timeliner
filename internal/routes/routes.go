@@ -1,7 +1,7 @@
 package routes
 
 import (
-	//"context"
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,6 +14,7 @@ import (
 	"timeliner/web/components"
 
 	//"github.com/a-h/templ"
+	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth"
@@ -337,7 +338,11 @@ func (h *Handler) GetNewEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid incident ID", http.StatusBadRequest)
 		return
 	}
-	component := components.NewEvent(intID)
+	iocTypes, err := h.App.Models.Events.GetIOCTypes()
+	if err != nil {
+		http.Error(w, "Error receiving IOC Types", http.StatusBadRequest)
+	}
+	component := components.NewEvent(intID, iocTypes)
 	component.Render(r.Context(), w)
 }
 func (h *Handler) GetNewEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -390,7 +395,7 @@ func (h *Handler) PostNewEndpoint(w http.ResponseWriter, r *http.Request) {
 	// Parse last_seen string to *time.Time
 	var parsedLastSeen *time.Time
 	if last_seen != "" {
-		t, err := time.Parse("2006-01-02 15:04:05", last_seen)
+		t, err := time.Parse("2006-01-02T15:04:05", last_seen)
 		if err == nil {
 			parsedLastSeen = &t
 		}
@@ -493,6 +498,7 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 	// read values
 	//name := r.PostForm.Get("event-name")
 	eventTime := r.PostForm.Get("event-time")
+	//timeZone := r.PostForm.Get("event-time-tz")
 	event_type := r.PostForm.Get("event-type")
 	endpoint := r.PostForm.Get("event-endpoint")
 	description := r.PostForm.Get("event-description")
@@ -511,15 +517,52 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	*/
-	var timestamp pgtype.Timestamp
+	var timestamp pgtype.Timestamptz
 	if eventTime != "" {
-		t, err := time.Parse("2006-01-02 15:04:05", eventTime)
+		/*
+		// this was not working so I'm taking it out for now
+		// get timeZone
+		// parse timezone
+		var seconds int = 60
+		// set to minutes
+		if strings.Contains(eventTime, ":") {
+			if strings.Contains(eventTime, "30") {
+				seconds *= 30
+			} else if strings.Contains(eventTime, "45") {
+				seconds *= 45
+			}
+			x := strings.Split(eventTime, ":")[0]
+			x = strings.Split(eventTime, "-")[1]
+			seconds *= strconv.ParseInt(x, 10, 64)
+		} else {
+			seconds *= 60
+			x = strings.Split(eventTime, "-")[1]
+			seconds *= strconv.ParseInt(x, 10, 64)
+		}
+
+		if eventTime[2:4] == "-" {
+			seconds *= -1
+		}
+		loc, err := time.ParseInLocation(eventTime, seconds)
+		if err != nil {
+			fmt.Printf("Error parsing time zone: %v", err)
+		}
+		tz, err := time.ParseInLocation("2006-01-02T15:04",)
+		if err != nil {
+			fmt.Printf("Error parsing time zone: %v", err)
+		}
+		*/
+
+		t, err := time.Parse("2006-01-02T15:04", eventTime)
 		if err != nil {
 			fmt.Printf("Error parsing time: %v\n", err)
 		}
-		timestamp = pgtype.Timestamp{
+		timestamp = pgtype.Timestamptz{
 			Time: t,
+			Status: pgtype.Present,
+			InfinityModifier: pgtype.None,
 		}
+		fmt.Printf("Time: %v", t)
 	}
 
 	var parsedEndpoint int64
@@ -569,9 +612,9 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// TODO broadcast using SSE 
-	var new_event string = fmt.Sprintf("'incident_id': %d;\n'event_id: %d;'", intID, event_id)
-	h.Broadcaster.Broadcast <- new_event
+	// broadcast the event creation with SSE
+	message := broadcaster.Message{IncidentID: intID, Message: fmt.Sprintf("NewEvent;incident_id:%d;event_id:%d", intID, event_id)}
+	h.Broadcaster.Broadcaster <-message
 	h.GetIncidentEvents(w, r)
 }
 func (h *Handler) Empty(w http.ResponseWriter, r *http.Request) {
@@ -766,6 +809,11 @@ func (h *Handler) EventStream(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
 		return
 	}
+	id := chi.URLParam(r, "id")
+	incident_id, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid incident ID", http.StatusBadRequest)
+	}
 	// set headers to allow all origins.
 	// using a tutorial from https://medium.com/@rian.eka.cahya/server-sent-event-sse-with-go-10592d9c2aa1
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -776,41 +824,44 @@ func (h *Handler) EventStream(w http.ResponseWriter, r *http.Request) {
 
 	// establish new connection channel
 	messageChannel := make(chan string)
-	//h.Broadcaster.newConnection <- messageChannel
-	h.Broadcaster.NewConnection <- messageChannel
+	client := broadcaster.Client{IncidentID: incident_id, Channel: messageChannel}
+	h.Broadcaster.RegisterClient <-client
 	defer func() {
-		h.Broadcaster.CloseConnection <- messageChannel
+		h.Broadcaster.UnregisterClient <-client
 	}()
 	closedConnection := r.Context().Done()
 	go func() {
 		<-closedConnection
-		h.Broadcaster.CloseConnection <- messageChannel
+		h.Broadcaster.UnregisterClient <-client
 	}()
 	// wait for channel events
 	for {
-		fmt.Fprintf(w, "event: SSETest\n\n")
-		fmt.Fprintf(w, "data: %s\n\n", <-messageChannel)
+		message := <-messageChannel
+		if strings.HasPrefix(message, "NewEvent") {
+			// logic for pushing events 
+			incident_id_str := strings.TrimPrefix(message, "NewEvent;incident_id:")
+			incident_id_str = strings.Split(incident_id_str, ";")[0]
+			int_incident_id, err := strconv.ParseInt(incident_id_str, 10, 64)
+			if err != nil {
+				http.Error(w, "Invalid incident ID", http.StatusBadRequest)
+				return
+			}
+			events, err := h.App.Models.Events.GetEventsForIncident(int_incident_id)
+			if err != nil {
+				http.Error(w, "Problem receiving events", http.StatusBadRequest)
+				fmt.Printf("Error: %v", err)
+				return
+			}
+
+			component := components.Events(int_incident_id, events)
+			html, err := templ.ToGoHTML(context.Background(), component)
+			if err != nil {
+				// TODO
+			}
+			fmt.Fprintf(w, "event: NewEvent\n\n")
+			fmt.Fprintf(w, "data: %v\n\n", html)
+			w.(http.Flusher).Flush()
+		}
 		flusher.Flush()
 	}
-
-	/*
-	component := components.Test()
-
-	var html string
-	html, err := templ.ToGoHTML(context.Background(), component)
-	if err != nil {
-	}
-	//component.Render(r.Context(), w)
-	fmt.Fprintf(w, "event: SSETest\n\n")
-	//fmt.Fprintf(w, "data: %s\n\n", fmt.Sprintf("<h2>Event</h2>"))
-	fmt.Fprintf(w, "data: %s\n\n", fmt.Sprintf("%v", html))
-	//time.Sleep(2 * time.Second)
-	w.(http.Flusher).Flush()
-	// close Connection
-	*/
-	/*
-	closeNotify := w.(http.CloseNotifier).CloseNotify()
-	<-closeNotify
-	*/
 }
-// macro for new function: @n
