@@ -20,6 +20,7 @@ type Event struct {
 	CreatedBy   int64     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
 	Endpoint    int64     `json:"endpoint"`
+	MitreTactic string	`json:"mitre_tactic"`
 }
 
 type Comment struct {
@@ -47,6 +48,11 @@ type IOCType struct {
 	
 }
 
+type MitreTactic struct {
+	TacticID string
+	Name string
+}
+
 type EventDetails struct {
 	Event    *Event     `json:'event'`
 	Comments []*Comment `json:'comments'`
@@ -63,6 +69,7 @@ type REvent struct {
 	CreatedBy   *User     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
 	Endpoint    int64     `json:"endpoint"`
+	MitreTactic MitreTactic `json:"mitre_tactic"`
 }
 
 type EventModel struct {
@@ -72,8 +79,9 @@ type EventModel struct {
 
 func (m EventModel) GetByID(id int64) (*Event, error) {
 	query := `
-		SELECT event_id, incident_id, event_time, event_type, description, created_by, created_at, endpoint_id 
+		SELECT event_id, incident_id, event_time, event_type, description, created_by, created_at, endpoint_id, mitre_tactic.name
 		FROM events
+		INNER JOIN mitre_tactic ON events.mitre_tactic = mitre_tactic.tactic_id
 		WHERE event_id=$1
 	`
 	var event Event
@@ -87,6 +95,7 @@ func (m EventModel) GetByID(id int64) (*Event, error) {
 		&event.CreatedBy,
 		&event.CreatedAt,
 		&event.Endpoint,
+		&event.MitreTactic,
 	)
 
 	if err != nil {
@@ -100,18 +109,20 @@ func (m EventModel) GetByID(id int64) (*Event, error) {
 
 func (m EventModel) Insert(event *Event) (int64, error) {
 	query := `
-		INSERT INTO events (incident_id, event_time, event_type, description, created_by, endpoint_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO events (incident_id, event_time, event_type, description, created_by, endpoint_id, mitre_tactic)
+		VALUES ($1, $2, $3, $4, $5, $6, 
+			(SELECT tactic_id FROM mitre_tactic WHERE tactic_id=$7))
 		RETURNING event_id
 	`
 	var id int32
 	err := m.DB.QueryRow(m.CTX, query, event.Incident, event.EventTime,
 		event.EventType, event.Description, event.CreatedBy,
-		event.Endpoint).Scan(
+		event.Endpoint, event.MitreTactic).Scan(
 		&id,
 	)
 
 	if err != nil {
+		fmt.Printf("Eror in event creation %v\n\n",err)
 		return -1, fmt.Errorf("failed to create event %v", err)
 	}
 	return int64(id), nil
@@ -200,8 +211,9 @@ func (m EventModel) GetEventsForIncident(incident_id int64) ([]*Event, error) {
 	*/ 
 	//TODO get the mitre tactic as well
 	query := `
-		SELECT event_id, event_time, event_type, description, created_by, endpoint_id
+		SELECT event_id, event_time, event_type, description, created_by, endpoint_id, mitre_tactic.name
 		FROM events
+		INNER JOIN mitre_tactic ON events.mitre_tactic = mitre_tactic.tactic_id
 		WHERE incident_id=$1
 		ORDER BY event_time
 	`
@@ -223,6 +235,7 @@ func (m EventModel) GetEventsForIncident(incident_id int64) ([]*Event, error) {
 			&event.Description,
 			&event.CreatedBy,
 			&event.Endpoint,
+			&event.MitreTactic,
 		)
 		if err != nil {
 			return nil, err
@@ -351,4 +364,29 @@ func (m EventModel) AddComment(event_id int64, user_id int64, comment string) er
 		return err
 	}
 	return nil
+}
+
+func (m EventModel) GetMitreTactics() ([]*MitreTactic, error){
+	var tactics []*MitreTactic
+	query := `
+		SELECT tactic_id, name
+		FROM mitre_tactic
+	`
+	rows, err := m.DB.Query(m.CTX, query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var tactic MitreTactic
+		err := rows.Scan(
+			&tactic.TacticID,
+			&tactic.Name,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		tactics = append(tactics, &tactic)
+	}
+	return tactics, nil
 }

@@ -342,7 +342,11 @@ func (h *Handler) GetNewEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Error receiving IOC Types", http.StatusBadRequest)
 	}
-	component := components.NewEvent(intID, iocTypes)
+	mitreTactics, err := h.App.Models.Events.GetMitreTactics()
+	if err != nil {
+		http.Error(w, "Error receiving MITRE Tactics", http.StatusBadRequest)
+	}
+	component := components.NewEvent(intID, iocTypes, mitreTactics)
 	component.Render(r.Context(), w)
 }
 func (h *Handler) GetNewEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -504,54 +508,13 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 	description := r.PostForm.Get("event-description")
 	iocTypes := r.PostForm["ioc-type"]
 	iocValues := r.PostForm["ioc-value"]
+	tactic := r.PostForm.Get("event-tactic")
 
 	// get user
 	user := h.validate_user(r)
 
-	/*
-	var parsedTime time.Time
-	if eventTime != "" {
-		t, err := time.Parse("2006-01-02 15:04:05", eventTime)
-		if err == nil {
-			parsedTime = t
-		}
-	}
-	*/
 	var timestamp pgtype.Timestamptz
 	if eventTime != "" {
-		/*
-		// this was not working so I'm taking it out for now
-		// get timeZone
-		// parse timezone
-		var seconds int = 60
-		// set to minutes
-		if strings.Contains(eventTime, ":") {
-			if strings.Contains(eventTime, "30") {
-				seconds *= 30
-			} else if strings.Contains(eventTime, "45") {
-				seconds *= 45
-			}
-			x := strings.Split(eventTime, ":")[0]
-			x = strings.Split(eventTime, "-")[1]
-			seconds *= strconv.ParseInt(x, 10, 64)
-		} else {
-			seconds *= 60
-			x = strings.Split(eventTime, "-")[1]
-			seconds *= strconv.ParseInt(x, 10, 64)
-		}
-
-		if eventTime[2:4] == "-" {
-			seconds *= -1
-		}
-		loc, err := time.ParseInLocation(eventTime, seconds)
-		if err != nil {
-			fmt.Printf("Error parsing time zone: %v", err)
-		}
-		tz, err := time.ParseInLocation("2006-01-02T15:04",)
-		if err != nil {
-			fmt.Printf("Error parsing time zone: %v", err)
-		}
-		*/
 
 		t, err := time.Parse("2006-01-02T15:04", eventTime)
 		if err != nil {
@@ -562,7 +525,6 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 			Status: pgtype.Present,
 			InfinityModifier: pgtype.None,
 		}
-		fmt.Printf("Time: %v", t)
 	}
 
 	var parsedEndpoint int64
@@ -582,6 +544,7 @@ func (h *Handler) PostNewEvent(w http.ResponseWriter, r *http.Request) {
 	event.Description = description
 	event.CreatedBy = user.ID
 	event.Endpoint = parsedEndpoint
+	event.MitreTactic = tactic
 
 	// post it
 	event_id, err := h.App.Models.Events.Insert(&event)

@@ -71,7 +71,7 @@ CREATE TABLE events (
     event_id SERIAL PRIMARY KEY,
     incident_id INTEGER REFERENCES incidents(incident_id) ON DELETE CASCADE,
     event_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    event_type VARCHAR(100) DEFAULT "Uncategorized Event",  -- detection, analysis, containment, etc.
+    event_type VARCHAR(100) DEFAULT 'Uncategorized Event',  -- detection, analysis, containment, etc.
     description TEXT,
     created_by INTEGER REFERENCES users(user_id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

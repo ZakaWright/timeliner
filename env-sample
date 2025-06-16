@@ -1,0 +1,11 @@
+# Database Configuration
+DB_HOST=[TODO]
+DB_PORT=[TODO]
+DB_USER=[TODO]
+DB_PASSWORD=[TODO]
+DB_NAME=timeline
+DB_SSL_MODE=disable
+
+# Application Settings
+PORT=8080
+JWT_SECRET=[TODO]

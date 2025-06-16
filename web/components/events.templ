@@ -17,18 +17,10 @@ templ Events(incident_id int64, events []*models.Event) {
     </div>
     <div class="events-list" id="events-list">
     <h1>Events</h1>
-    //<div hx-ext="sse" sse-connect={"/incident/" + strconv.FormatInt(incident_id, 10) + "/events/stream"} sse-swap="SSETest"></div>
     if events == nil || len(events) < 1 {
         <p>No Events</p>
 
     } else {
-        /*
-        <ul id="events-list-ul">
-        for _, event := range events {
-            <li>{event.EventType}:{utcTime(event.EventTime)}</li>
-        }
-        </ul>
-        */
         for _, event := range events {
             <div class="event border rounded my-2 p-2" id={"event-" + strconv.FormatInt(event.ID, 10)}
                 hx-get={"/incident/" + strconv.FormatInt(incident_id, 10) + "/event/" + strconv.FormatInt(event.ID, 10) + "/details"}
@@ -38,6 +30,7 @@ templ Events(incident_id int64, events []*models.Event) {
                 data-bs-target="#myModal"
                 >
                 <h5>{event.EventType}</h5>
+                <p>MITRE Tactic: {event.MitreTactic}</p>
                 <p>{utcTime(event.EventTime)}</p>
 
             </div>
@@ -49,7 +42,7 @@ templ Events(incident_id int64, events []*models.Event) {
         hx-target="#myModal"
         hx-swap="innerHTML"
     >New Event</button>
-    // close modal if open when successfully updated
+    // close modal (if open) when successfully updated
     <script>
         var modal = document.getElementById('myModal');
         if (modal) {
@@ -61,7 +54,7 @@ templ Events(incident_id int64, events []*models.Event) {
 
 }
 
-templ NewEvent(id int64, iocTypes []* models.IOCType) {
+templ NewEvent(id int64, iocTypes []* models.IOCType, mitreTactics []* models.MitreTactic) {
     <div class="modal-dialog">
         <div class="modal-content">
 
@@ -78,16 +71,23 @@ templ NewEvent(id int64, iocTypes []* models.IOCType) {
                     hx-swap="innerHTML">
             <!-- Modal body -->
                 <div class="modal-body">
-                    /*
-                    <label for="event-name" class="form-label">Name</label>
-                    <input type="text" class="form-control" id="event-name" name="event-name" required>
-                    */
                     // TODO adjust for UTC time/add timezone picker
-                    <label for="event-time" class="form-label">Event Time (Local)</label>
+                    <label for="event-time" class="form-label">Event Time (UTC)</label>
                     <input type="datetime-local" class="form-control" id="event-time" name="event-time" required>
 
                     <label for="event-type" class="form-label">Event Type</label>
                     <input type="text" class="form-control" id="event-type" name="event-type" required>
+
+                    <label for="event-tactic" class="form-label">MITRE Tactic</label>
+                    <select name="event-tactic" aria-label="MITRE Tactic" id="event-tactic" class="form-select">
+                        for _, tactic := range mitreTactics {
+                            if tactic.TacticID == "NONE" {
+                            <option selected value={tactic.TacticID}>{tactic.Name}</option>
+                            } else {
+                            <option value={tactic.TacticID}>{tactic.Name}</option>
+                            }
+                        }
+                    </select>
 
                     <label for="event-endpoint" class="form-label">Endpoint</label>
                     <div class="input-group">
@@ -190,6 +190,7 @@ templ TimelineEvent(incident_id int64, eventDetails []*models.EventDetails) {
                     <h5 class="fw-bold">{event.Event.EventType}</h5>
                     <p class="text-muted mb-2 mx-3">{len(event.Comments)} Comments</p>
                 </div>
+                <p>MITRE Tactic: {event.Event.MitreTactic}</p>
                 <p class="text-muted mb-2 fw-bold">{utcTime(event.Event.EventTime)} UTC</p>
                 //<ul>
                 if event.IOCs != nil && len(event.IOCs) > 0 {
@@ -245,6 +246,7 @@ templ EventDetails(incident_id int64, event *models.EventDetails) {
             </div>
             <!-- Modal body -->
                 <div class="modal-body">
+                <h5>MITRE Tactic: {event.Event.MitreTactic}</h5>
                     <h5>IOCs</h5>
                     if event.IOCs == nil || len(event.IOCs) < 1 {
                         <p>No IOCs</p>
