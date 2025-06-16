@@ -8,6 +8,7 @@ This project was designed to end the 'spreadsheet of death' common in incident r
 
 ## Run the project
 The easiest way to run this project is with Docker.
+In `docker-compose.yml` replace the TODO with a password for the database user.
 To get run the project, first clone the `env-sample` file to `.env` and replace the TODO variables with your own values.
 Run `docker-compose up` to start the container.
 

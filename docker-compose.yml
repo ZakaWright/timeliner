@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: timeliner_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: timeline
+      POSTGRES_USER: timeline_user
+      POSTGRES_PASSWORD: [TODO]
+    ports: 
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./configs/sql/schema.sql:/docker-entrypoint-initdb.d/01.schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timeline_user -d timeline"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timeliner_server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DB_SSLMODE: disable
+
+      APP_ENV: production
+      PORT: 8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
