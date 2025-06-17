@@ -8,9 +8,12 @@ This project was designed to end the 'spreadsheet of death' common in incident r
 
 ## Run the project
 The easiest way to run this project is with Docker.
-In `docker-compose.yml` replace the TODO with a password for the database user.
-To get run the project, first clone the `env-sample` file to `.env` and replace the TODO variables with your own values.
+In `docker-compose.yml` replace the `TODO` fields with your own credentials.
 Run `docker-compose up` to start the container.
+To add test data to the database, run the following:
+```
+docker exec -d timeliner_db psql -U timeline_user -d timeline /docker-entrypoint-initdb.d/01.test-data.sql:ro
+```
 
 ## Tech Stack
 This project is built using the GOTH stack with a PostgreSQL database. The GOTH stack is made up of a Golang webserver using Templ templates and HTMX.

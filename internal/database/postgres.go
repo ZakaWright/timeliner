@@ -17,7 +17,7 @@ type Config struct {
 	DBName   string
 	SSLMode  string
 }
-
+/*
 func ConfigFromEnv() Config {
 	return Config{
 		Host:     getEnv("DB_HOST"),
@@ -26,6 +26,17 @@ func ConfigFromEnv() Config {
 		Password: getEnv("DB_PASSWORD"),
 		DBName:   getEnv("DB_NAME"),
 		SSLMode:  getEnv("DB_SSL_MODE"),
+	}
+}
+*/
+func ConfigFromEnv() Config {
+	return Config{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		DBName:   os.Getenv("DB_NAME"),
+		SSLMode:  os.Getenv("DB_SSL_MODE"),
 	}
 }
 

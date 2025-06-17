@@ -14,6 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./configs/sql/schema.sql:/docker-entrypoint-initdb.d/01.schema.sql:ro
+      - ./configs/sql/test-data.sql:/docker-entrypoint-initdb.d/01.test-data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U timeline_user -d timeline"]
       interval: 5s
@@ -29,8 +30,12 @@ services:
     ports:
       - "8000:8000"
     environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: timeline_user
+      DB_PASSWORD: [TODO]
       DB_SSLMODE: disable
-
+      JWT_SECRET: [TODO]
       APP_ENV: production
       PORT: 8000
     depends_on:
